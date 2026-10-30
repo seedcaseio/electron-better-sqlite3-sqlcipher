@@ -29,7 +29,7 @@ if [ -z "$ELECTRON_VERSION" ]; then
 fi
 if [ -z "$ELECTRON_VERSION" ]; then
   echo "Unable to resolve Electron version from $ROOT_DIR/package.json."
-  echo "Set ELECTRON_VERSION explicitly, e.g. ELECTRON_VERSION=35.1.4 npm run sqlcipher:ensure"
+  echo "Set ELECTRON_VERSION explicitly, e.g. ELECTRON_VERSION=45.1.0 npm run sqlcipher:ensure"
   exit 1
 fi
 SQLITE3_C_HASH="$(hash_file "$AMALGAMATION_DIR/sqlite3.c")"

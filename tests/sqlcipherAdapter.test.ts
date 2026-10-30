@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import * as path from 'path';
 import {
   applySecurityPragmas,
+  assertCipherAvailable,
   closeDatabase,
+  createSqlcipherDatabaseCtor,
   isCipherAvailable,
   openEncryptedDatabase,
+  resolveSqlcipherBindingPath,
   runMigrations,
 } from '../src';
 
@@ -75,6 +79,9 @@ describe('sqlcipher adapter', () => {
         databaseCtor: FakeCtor,
       }),
     ).toThrow(/SQLCipher is not available/);
+    // Nothing was written (no key, no journal_mode=WAL) before the cipher check failed.
+    expect(fakeDb.pragmaCalls).toEqual(['cipher_version']);
+    expect(fakeDb.closed).toBe(true);
   });
 
   it('runs migration callback on active database', () => {
@@ -118,5 +125,42 @@ describe('sqlcipher adapter', () => {
       'foreign_keys = OFF',
       'secure_delete = OFF',
     ]);
+  });
+
+  it('resolves the SQLCipher build of better-sqlite3, not its plain SQLite prebuilds', () => {
+    const entry = path.join('/app', 'node_modules', 'better-sqlite3', 'lib', 'index.js');
+    const bindingPath = resolveSqlcipherBindingPath(() => entry);
+    expect(bindingPath).toBe(
+      path.join('/app', 'node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
+    );
+    expect(bindingPath).not.toContain('prebuilds');
+  });
+
+  it('resolves the installed better-sqlite3 by default', () => {
+    expect(resolveSqlcipherBindingPath()).toMatch(/better-sqlite3[\\/]build[\\/]Release[\\/]better_sqlite3\.node$/);
+  });
+
+  it('always passes the SQLCipher build as nativeBinding', () => {
+    const calls: Array<{ dbPath: string; options: unknown }> = [];
+    const fakeDb = createFakeDb('4.6.1');
+    const FakeModule = class {
+      constructor(dbPath: string, options?: unknown) {
+        calls.push({ dbPath, options });
+        return fakeDb;
+      }
+    } as unknown as new (path: string, options?: object) => any;
+
+    const Ctor = createSqlcipherDatabaseCtor(FakeModule, '/app/build/Release/better_sqlite3.node');
+    const db = new Ctor('/vault/db.sqlite');
+
+    expect(db).toBe(fakeDb);
+    expect(calls).toEqual([
+      { dbPath: '/vault/db.sqlite', options: { nativeBinding: '/app/build/Release/better_sqlite3.node' } },
+    ]);
+  });
+
+  it('exposes the cipher guard for connections opened outside openEncryptedDatabase', () => {
+    expect(() => assertCipherAvailable(createFakeDb(undefined) as any)).toThrow(/SQLCipher is not available/);
+    expect(() => assertCipherAvailable(createFakeDb('4.6.1') as any)).not.toThrow();
   });
 });

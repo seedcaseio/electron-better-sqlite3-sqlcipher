@@ -17,7 +17,7 @@ fi
 
 if [ -z "$ELECTRON_VERSION" ]; then
   echo "Unable to resolve Electron version from $ROOT_DIR/package.json."
-  echo "Set ELECTRON_VERSION explicitly, e.g. ELECTRON_VERSION=35.1.4 npm run sqlcipher:rebuild"
+  echo "Set ELECTRON_VERSION explicitly, e.g. ELECTRON_VERSION=45.1.0 npm run sqlcipher:rebuild"
   exit 1
 fi
 
@@ -31,11 +31,19 @@ echo "Rebuilding better-sqlite3 for Electron $ELECTRON_VERSION using SQLCipher a
 
 (
   cd "$ROOT_DIR/node_modules/better-sqlite3"
+  # --force_build=1: better-sqlite3 13 skips compiling when it ships a prebuilt binary
+  # for the host, and those prebuilds are plain SQLite (no SQLCipher).
+  # node-gyp logs its whole environment (secrets included) at the "silly" level, and
+  # npm_config_loglevel (env, or re-exported by npx from .npmrc) overrides --loglevel.
+  # Pin it to "info": an env value wins over .npmrc and npx passes it down unchanged.
+  # npx --no: fail instead of downloading an unlocked node-gyp from the registry.
+  # Keep comments out of the continued command below: they would cut it in two.
   CFLAGS='-DSQLITE_HAS_CODEC -DSQLITE_TEMP_STORE=2 -DSQLCIPHER_CRYPTO_OPENSSL -DHAVE_STDINT_H=1' \
   CXXFLAGS='-DSQLITE_HAS_CODEC -DSQLITE_TEMP_STORE=2 -DSQLCIPHER_CRYPTO_OPENSSL -DHAVE_STDINT_H=1' \
   LDFLAGS='-Wl,--no-as-needed -lcrypto' \
-  npx node-gyp rebuild \
+  env -u NPM_CONFIG_LOGLEVEL npm_config_loglevel=info npx --no -- node-gyp rebuild \
     --release \
+    --force_build=1 \
     --runtime=electron \
     --target="$ELECTRON_VERSION" \
     --dist-url=https://electronjs.org/headers \

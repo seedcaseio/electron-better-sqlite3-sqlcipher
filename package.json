@@ -1,6 +1,6 @@
 {
   "name": "@frag-ment/better-sqlite3-sqlcipher",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "SQLCipher-enabled better-sqlite3 adapter",
   "license": "MIT",
@@ -46,14 +46,15 @@
     "sqlcipher:rebuild": "bash ./scripts/rebuild-electron-sqlcipher.sh",
     "sqlcipher:check": "bash ./scripts/check-runtime.sh"
   },
-  "dependencies": {
-    "better-sqlite3": "^12.8.0"
+  "peerDependencies": {
+    "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.5.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "better-sqlite3": "^13.0.3"
   },
   "engines": {
     "node": ">=22.14.0"

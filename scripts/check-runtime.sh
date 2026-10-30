@@ -18,7 +18,9 @@ const { app } = require('electron');
 
 app.whenReady().then(() => {
   try {
-    const Database = require('better-sqlite3');
+    // Same constructor as the app: bound to the SQLCipher build, never the plain SQLite prebuilds.
+    const { getSqlcipherDatabaseCtor } = require('@frag-ment/better-sqlite3-sqlcipher');
+    const Database = getSqlcipherDatabaseCtor();
     const db = new Database(':memory:');
     db.pragma("key='probe'");
     const version = db.pragma('cipher_version', { simple: true });
@@ -37,4 +39,4 @@ app.whenReady().then(() => {
 });
 EOF
 
-npx electron "$TMP_SCRIPT"
+npx --no electron "$TMP_SCRIPT"
