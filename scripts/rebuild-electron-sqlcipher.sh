@@ -2,10 +2,10 @@
 set -euo pipefail
 
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ROOT_DIR="${FRAGMENT_APP_ROOT:-${INIT_CWD:-}}"
+ROOT_DIR="${ELECTRON_SQLCIPHER_APP_ROOT:-${INIT_CWD:-}}"
 if [ -z "$ROOT_DIR" ] || [ ! -f "$ROOT_DIR/package.json" ]; then
   echo "Unable to resolve host app root."
-  echo "Set FRAGMENT_APP_ROOT to the app directory (must contain package.json)."
+  echo "Set ELECTRON_SQLCIPHER_APP_ROOT to the app directory (must contain package.json)."
   exit 1
 fi
 AMALGAMATION_DIR="$PACKAGE_DIR/vendor/sqlcipher-amalgamation"
@@ -38,8 +38,8 @@ echo "Rebuilding better-sqlite3 for Electron $ELECTRON_VERSION using SQLCipher a
   # Pin it to "info": an env value wins over .npmrc and npx passes it down unchanged.
   # npx --no: fail instead of downloading an unlocked node-gyp from the registry.
   # Keep comments out of the continued command below: they would cut it in two.
-  CFLAGS='-DSQLITE_HAS_CODEC -DSQLITE_TEMP_STORE=2 -DSQLCIPHER_CRYPTO_OPENSSL -DHAVE_STDINT_H=1' \
-  CXXFLAGS='-DSQLITE_HAS_CODEC -DSQLITE_TEMP_STORE=2 -DSQLCIPHER_CRYPTO_OPENSSL -DHAVE_STDINT_H=1' \
+  CFLAGS='-DSQLITE_HAS_CODEC -DSQLITE_TEMP_STORE=2 -DSQLITE_EXTRA_INIT=sqlcipher_extra_init -DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown -DSQLCIPHER_CRYPTO_OPENSSL -DHAVE_STDINT_H=1' \
+  CXXFLAGS='-DSQLITE_HAS_CODEC -DSQLITE_TEMP_STORE=2 -DSQLITE_EXTRA_INIT=sqlcipher_extra_init -DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown -DSQLCIPHER_CRYPTO_OPENSSL -DHAVE_STDINT_H=1' \
   LDFLAGS='-Wl,--no-as-needed -lcrypto' \
   env -u NPM_CONFIG_LOGLEVEL npm_config_loglevel=info npx --no -- node-gyp rebuild \
     --release \

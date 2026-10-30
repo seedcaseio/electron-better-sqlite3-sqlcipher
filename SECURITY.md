@@ -1,3 +1,3 @@
 # Reporting a Vulnerability
 
-Please report suspected security vulnerabilities to contact@frag-ment.io. Thank you for your cooperation in making Frag-ment more secure.
+Please report suspected security vulnerabilities privately to contact@seedcase.io rather than in a public issue. Thank you for helping keep this package secure.

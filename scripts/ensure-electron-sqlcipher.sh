@@ -2,15 +2,15 @@
 set -euo pipefail
 
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ROOT_DIR="${FRAGMENT_APP_ROOT:-${INIT_CWD:-}}"
+ROOT_DIR="${ELECTRON_SQLCIPHER_APP_ROOT:-${INIT_CWD:-}}"
 if [ -z "$ROOT_DIR" ] || [ ! -f "$ROOT_DIR/package.json" ]; then
   echo "Unable to resolve host app root."
-  echo "Set FRAGMENT_APP_ROOT to the app directory (must contain package.json)."
+  echo "Set ELECTRON_SQLCIPHER_APP_ROOT to the app directory (must contain package.json)."
   exit 1
 fi
 AMALGAMATION_DIR="$PACKAGE_DIR/vendor/sqlcipher-amalgamation"
 # Keep stamp outside better-sqlite3/build because that folder can be recreated.
-STAMP_FILE="$ROOT_DIR/node_modules/.cache/fragment/sqlcipher/.sqlcipher-electron-stamp"
+STAMP_FILE="$ROOT_DIR/node_modules/.cache/electron-better-sqlite3-sqlcipher/.sqlcipher-electron-stamp"
 
 if [ ! -f "$AMALGAMATION_DIR/sqlite3.c" ] || [ ! -f "$AMALGAMATION_DIR/sqlite3.h" ]; then
   echo "Missing SQLCipher amalgamation files in $AMALGAMATION_DIR"

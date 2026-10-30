@@ -1,16 +1,16 @@
 {
-  "name": "@frag-ment/better-sqlite3-sqlcipher",
+  "name": "electron-better-sqlite3-sqlcipher",
   "version": "0.2.0",
   "private": false,
-  "description": "SQLCipher-enabled better-sqlite3 adapter",
+  "description": "Build better-sqlite3 with SQLCipher for Electron, and open encrypted databases",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/frag-mentIO/better-sqlite3-sqlcipher.git"
+    "url": "git+https://github.com/seedcaseio/electron-better-sqlite3-sqlcipher.git"
   },
-  "homepage": "https://github.com/frag-mentIO/better-sqlite3-sqlcipher#readme",
+  "homepage": "https://github.com/seedcaseio/electron-better-sqlite3-sqlcipher#readme",
   "bugs": {
-    "url": "https://github.com/frag-mentIO/better-sqlite3-sqlcipher/issues"
+    "url": "https://github.com/seedcaseio/electron-better-sqlite3-sqlcipher/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -30,14 +30,15 @@
     "README.md",
     "LICENSE",
     "scripts",
-    "vendor/sqlcipher-amalgamation"
+    "vendor/sqlcipher-amalgamation",
+    "vendor/keys"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepare": "npm run build",
     "prepack": "npm run build",
     "pack": "mkdir -p build/packages && npm pack --pack-destination build/packages",
-    "test": "vitest run --config tests/vitest.config.ts",
+    "test": "vitest run --config tests/vitest.config.mts",
     "postinstall": "bash ./scripts/bootstrap.sh postinstall",
     "sqlcipher:bootstrap": "bash ./scripts/bootstrap.sh",
     "sqlcipher:bootstrap:strict": "bash ./scripts/bootstrap.sh strict",
@@ -50,11 +51,11 @@
     "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^25.5.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.0",
-    "better-sqlite3": "^13.0.3"
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^22.20.5",
+    "better-sqlite3": "^13.0.3",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": ">=22.14.0"

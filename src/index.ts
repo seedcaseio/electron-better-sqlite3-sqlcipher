@@ -7,6 +7,12 @@ type BetterSqlite3Module = new (path: string, options?: BetterSqlite3.Options) =
 
 export type SecurityPragmaOptions = {
   kdfIter?: number;
+  /**
+   * Enables `PRAGMA cipher_memory_security` (default true): SQLite allocations, page buffers
+   * included, are zeroed when freed and mlocked on a best-effort basis. Process-wide, and
+   * SQLCipher can only enable it: `false` skips enabling but never turns it off.
+   */
+  memorySecurity?: boolean;
   foreignKeys?: boolean;
   secureDelete?: boolean;
   journalMode?: 'DELETE' | 'TRUNCATE' | 'PERSIST' | 'MEMORY' | 'WAL' | 'OFF';
@@ -68,8 +74,13 @@ export function applySecurityPragmas(
   passphrase: string,
   options?: SecurityPragmaOptions,
 ): void {
+  // Before the key, so the copies of the passphrase SQLite makes while parsing it are wiped.
+  if (options?.memorySecurity !== false) db.pragma('cipher_memory_security = ON');
   const escapedKey = passphrase.replace(/'/g, "''");
   db.pragma(`key='${escapedKey}'`);
+  // Before any write (journal_mode=WAL can create the file): the key must have attached
+  // an encrypting codec to this connection, not just loaded a SQLCipher-capable library.
+  assertEncryptionActive(db);
   db.pragma(`kdf_iter=${options?.kdfIter ?? DEFAULT_KDF_ITER}`);
   db.pragma(`journal_mode = ${options?.journalMode ?? 'WAL'}`);
   db.pragma(`foreign_keys = ${options?.foreignKeys === false ? 'OFF' : 'ON'}`);
@@ -83,6 +94,17 @@ export function assertCipherAvailable(db: BetterSqlite3Database): void {
     throw new Error(
       'SQLCipher is not available in current SQLite runtime. Build better-sqlite3 against SQLCipher before starting the app.',
     );
+  }
+}
+
+/**
+ * Throws unless the key attached an encrypting codec to this connection
+ * (`PRAGMA cipher_status`, SQLCipher 4.12+). `applySecurityPragmas` calls it right after the key.
+ */
+export function assertEncryptionActive(db: BetterSqlite3Database): void {
+  const status = db.pragma('cipher_status', { simple: true }) as string | number | undefined;
+  if (String(status) !== '1') {
+    throw new Error('SQLCipher encryption is not active on this connection. Refusing to use it.');
   }
 }
 

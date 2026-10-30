@@ -3,6 +3,7 @@ import * as path from 'path';
 import {
   applySecurityPragmas,
   assertCipherAvailable,
+  assertEncryptionActive,
   closeDatabase,
   createSqlcipherDatabaseCtor,
   isCipherAvailable,
@@ -20,7 +21,8 @@ type FakeDb = {
   exec: (query: string) => void;
 };
 
-function createFakeDb(cipherVersion: string | undefined): FakeDb {
+// cipherStatus null: the pragma is unknown, as on a plain SQLite build.
+function createFakeDb(cipherVersion: string | undefined, cipherStatus: string | null = '1'): FakeDb {
   return {
     closed: false,
     pragmaCalls: [],
@@ -31,6 +33,7 @@ function createFakeDb(cipherVersion: string | undefined): FakeDb {
     pragma(query: string, options?: { simple?: boolean }) {
       this.pragmaCalls.push(query);
       if (query === 'cipher_version' && options?.simple) return cipherVersion;
+      if (query === 'cipher_status' && options?.simple) return cipherStatus ?? undefined;
       return undefined;
     },
     exec(query: string) {
@@ -41,7 +44,7 @@ function createFakeDb(cipherVersion: string | undefined): FakeDb {
 
 describe('sqlcipher adapter', () => {
   it('opens encrypted database and applies expected PRAGMA initialization', () => {
-    const fakeDb = createFakeDb('4.6.1');
+    const fakeDb = createFakeDb('4.20.0 community');
     const FakeCtor = class {
       constructor(_path: string) {
         return fakeDb;
@@ -56,6 +59,10 @@ describe('sqlcipher adapter', () => {
 
     expect(db).toBe(fakeDb);
     expect(fakeDb.pragmaCalls).toContain("key='abc''def'");
+    // Memory security is enabled before the key so key derivation is covered.
+    expect(fakeDb.pragmaCalls.indexOf('cipher_memory_security = ON')).toBeLessThan(
+      fakeDb.pragmaCalls.indexOf("key='abc''def'"),
+    );
     expect(fakeDb.pragmaCalls).toContain('kdf_iter=256000');
     expect(fakeDb.pragmaCalls).toContain('journal_mode = WAL');
     expect(fakeDb.pragmaCalls).toContain('foreign_keys = ON');
@@ -85,7 +92,7 @@ describe('sqlcipher adapter', () => {
   });
 
   it('runs migration callback on active database', () => {
-    const fakeDb = createFakeDb('4.6.1');
+    const fakeDb = createFakeDb('4.20.0 community');
     const FakeCtor = class {
       constructor(_path: string) {
         return fakeDb;
@@ -101,7 +108,7 @@ describe('sqlcipher adapter', () => {
   });
 
   it('checks cipher availability via health check', () => {
-    const fakeDb = createFakeDb('4.6.1');
+    const fakeDb = createFakeDb('4.20.0 community');
     const FakeCtor = class {
       constructor(_path: string) {
         return fakeDb;
@@ -111,15 +118,18 @@ describe('sqlcipher adapter', () => {
   });
 
   it('exposes pragma helper for custom settings', () => {
-    const fakeDb = createFakeDb('4.6.1');
+    const fakeDb = createFakeDb('4.20.0 community');
     applySecurityPragmas(fakeDb as any, 'secret', {
       kdfIter: 1000,
+      memorySecurity: false,
       foreignKeys: false,
       secureDelete: false,
       journalMode: 'DELETE',
     });
+    // memorySecurity: false skips the pragma (SQLCipher cannot turn it off anyway).
     expect(fakeDb.pragmaCalls).toEqual([
       "key='secret'",
+      'cipher_status',
       'kdf_iter=1000',
       'journal_mode = DELETE',
       'foreign_keys = OFF',
@@ -142,7 +152,7 @@ describe('sqlcipher adapter', () => {
 
   it('always passes the SQLCipher build as nativeBinding', () => {
     const calls: Array<{ dbPath: string; options: unknown }> = [];
-    const fakeDb = createFakeDb('4.6.1');
+    const fakeDb = createFakeDb('4.20.0 community');
     const FakeModule = class {
       constructor(dbPath: string, options?: unknown) {
         calls.push({ dbPath, options });
@@ -161,6 +171,33 @@ describe('sqlcipher adapter', () => {
 
   it('exposes the cipher guard for connections opened outside openEncryptedDatabase', () => {
     expect(() => assertCipherAvailable(createFakeDb(undefined) as any)).toThrow(/SQLCipher is not available/);
-    expect(() => assertCipherAvailable(createFakeDb('4.6.1') as any)).not.toThrow();
+    expect(() => assertCipherAvailable(createFakeDb('4.20.0 community') as any)).not.toThrow();
+  });
+
+  it('refuses to write when the key did not activate encryption', () => {
+    const fakeDb = createFakeDb('4.20.0 community', '0');
+    const FakeCtor = class {
+      constructor(_path: string) {
+        return fakeDb;
+      }
+    } as unknown as new (path: string) => any;
+
+    expect(() =>
+      openEncryptedDatabase({ dbPath: ':memory:', passphrase: 'secret', databaseCtor: FakeCtor }),
+    ).toThrow(/encryption is not active/);
+    // Stopped right after the key: no kdf_iter, journal_mode or other write.
+    expect(fakeDb.pragmaCalls).toEqual([
+      'cipher_version',
+      'cipher_memory_security = ON',
+      "key='secret'",
+      'cipher_status',
+    ]);
+    expect(fakeDb.closed).toBe(true);
+  });
+
+  it('exposes the encryption guard', () => {
+    expect(() => assertEncryptionActive(createFakeDb('4.20.0 community', '0') as any)).toThrow(/not active/);
+    expect(() => assertEncryptionActive(createFakeDb('4.20.0 community', null) as any)).toThrow(/not active/);
+    expect(() => assertEncryptionActive(createFakeDb('4.20.0 community', '1') as any)).not.toThrow();
   });
 });
