@@ -1,6 +1,6 @@
 {
   "name": "electron-better-sqlite3-sqlcipher",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": false,
   "description": "Build better-sqlite3 with SQLCipher for Electron, and open encrypted databases",
   "license": "MIT",
