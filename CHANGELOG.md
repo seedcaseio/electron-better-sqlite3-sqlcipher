@@ -13,6 +13,7 @@ All notable changes to this project are documented here. The format is based on 
 ### Changed
 
 - `applySecurityPragmas` and `openEncryptedDatabase` validate `kdfIter` (positive integer) and `journalMode` (one of the documented modes) at runtime, and throw before anything is sent to the database. Values allowed by the TypeScript types are unaffected.
+- The package no longer ships the declaration source map (`dist/index.d.ts.map`), which pointed to sources that are not published, and `npm run build` now removes stale build files first.
 
 ## 0.2.0 - 2026-10-30
 

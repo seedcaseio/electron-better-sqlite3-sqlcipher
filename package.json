@@ -35,7 +35,8 @@
     "vendor/keys"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
     "prepublishOnly": "npm test",
     "prepare": "npm run build",
     "prepack": "npm run build",
