@@ -67,6 +67,8 @@ echo "SQLCipher $SQLCIPHER_REF verified: signed by $SIGNING_SUBKEY_FPR, commit $
 mkdir -p "$OUT_DIR"
 cp "$SRC_DIR/sqlite3.c" "$OUT_DIR/sqlite3.c"
 cp "$SRC_DIR/sqlite3.h" "$OUT_DIR/sqlite3.h"
+# SQLCipher license (BSD-style): its notice must ship with the amalgamation.
+cp "$SRC_DIR/LICENSE.md" "$OUT_DIR/LICENSE"
 printf '%s\n' "$SQLCIPHER_REF" > "$OUT_DIR/VERSION.txt"
 
 echo "Prepared SQLCipher amalgamation in $OUT_DIR"

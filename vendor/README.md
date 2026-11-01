@@ -9,6 +9,7 @@ Commit only:
 - `sqlcipher-amalgamation/sqlite3.c`
 - `sqlcipher-amalgamation/sqlite3.h`
 - `sqlcipher-amalgamation/VERSION.txt` (the SQLCipher git tag)
+- `sqlcipher-amalgamation/LICENSE` (the SQLCipher license, copied from the checkout)
 
 `sqlcipher-src/` is the SQLCipher checkout used to generate them. It is local only and ignored.
 

@@ -74,3 +74,26 @@ The amalgamation in `vendor/sqlcipher-amalgamation/` is generated from SQLCipher
 - Node.js: `>=22.14.0`
 - `better-sqlite3`: `^13.0.3` (N-API)
 - Electron host app: `45.x`
+
+## Security
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)
+
+Third-party code shipped in this package:
+
+- SQLCipher (`vendor/sqlcipher-amalgamation/`), Copyright Zetetic LLC, BSD-style license: see [`vendor/sqlcipher-amalgamation/LICENSE`](vendor/sqlcipher-amalgamation/LICENSE).
+- SQLite, on which SQLCipher is based, is in the [public domain](https://sqlite.org/copyright.html).
+
+The native module built by this package contains SQLCipher. An app that ships it in binary form must reproduce the SQLCipher copyright notice and license in its documentation or other materials (for example an "About" or third-party notices screen).
