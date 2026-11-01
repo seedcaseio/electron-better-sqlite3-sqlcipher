@@ -137,6 +137,36 @@ describe('sqlcipher adapter', () => {
     ]);
   });
 
+  it('rejects invalid pragma options before sending anything to the database', () => {
+    const invalidOptions = [
+      { kdfIter: 0 },
+      { kdfIter: -1 },
+      { kdfIter: 1.5 },
+      { kdfIter: Number.NaN },
+      { kdfIter: '1000; PRAGMA rekey=x' },
+      { journalMode: 'wal' },
+      { journalMode: 'WAL; PRAGMA rekey=x' },
+    ];
+    for (const options of invalidOptions) {
+      const fakeDb = createFakeDb('4.20.0 community');
+      expect(() => applySecurityPragmas(fakeDb as any, 'secret', options as any)).toThrow(/Invalid (kdfIter|journalMode)/);
+      expect(fakeDb.pragmaCalls).toEqual([]);
+    }
+  });
+
+  it('closes the database when openEncryptedDatabase gets invalid options', () => {
+    const fakeDb = createFakeDb('4.20.0 community');
+    const FakeCtor = class {
+      constructor(_path: string) {
+        return fakeDb;
+      }
+    } as unknown as new (path: string) => any;
+    expect(() =>
+      openEncryptedDatabase({ dbPath: ':memory:', passphrase: 'secret', databaseCtor: FakeCtor, kdfIter: -1 }),
+    ).toThrow(/Invalid kdfIter/);
+    expect(fakeDb.closed).toBe(true);
+  });
+
   it('resolves the SQLCipher build of better-sqlite3, not its plain SQLite prebuilds', () => {
     const entry = path.join('/app', 'node_modules', 'better-sqlite3', 'lib', 'index.js');
     const bindingPath = resolveSqlcipherBindingPath(() => entry);

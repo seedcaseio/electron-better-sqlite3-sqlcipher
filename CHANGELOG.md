@@ -10,6 +10,10 @@ All notable changes to this project are documented here. The format is based on 
 - `CHANGELOG.md`, `CONTRIBUTING.md` and `RELEASE.md`.
 - `prepublishOnly` runs the tests: `npm publish` is aborted when a test fails.
 
+### Changed
+
+- `applySecurityPragmas` and `openEncryptedDatabase` validate `kdfIter` (positive integer) and `journalMode` (one of the documented modes) at runtime, and throw before anything is sent to the database. Values allowed by the TypeScript types are unaffected.
+
 ## 0.2.0 - 2026-10-30
 
 First public release on npm.

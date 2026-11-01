@@ -25,6 +25,7 @@ export type OpenEncryptedDatabaseOptions = SecurityPragmaOptions & {
 };
 
 const DEFAULT_KDF_ITER = 256000;
+const JOURNAL_MODES: readonly string[] = ['DELETE', 'TRUNCATE', 'PERSIST', 'MEMORY', 'WAL', 'OFF'];
 let activeDb: BetterSqlite3Database | null = null;
 
 export function openEncryptedDatabase(options: OpenEncryptedDatabaseOptions): BetterSqlite3Database {
@@ -74,6 +75,16 @@ export function applySecurityPragmas(
   passphrase: string,
   options?: SecurityPragmaOptions,
 ): void {
+  // These values are interpolated into PRAGMA statements: check them at runtime, before
+  // anything reaches the database, since TypeScript types do not exist at runtime.
+  const kdfIter = options?.kdfIter ?? DEFAULT_KDF_ITER;
+  if (!Number.isSafeInteger(kdfIter) || kdfIter < 1) {
+    throw new Error('Invalid kdfIter: expected a positive integer.');
+  }
+  const journalMode = options?.journalMode ?? 'WAL';
+  if (!JOURNAL_MODES.includes(journalMode)) {
+    throw new Error(`Invalid journalMode: expected one of ${JOURNAL_MODES.join(', ')}.`);
+  }
   // Before the key, so the copies of the passphrase SQLite makes while parsing it are wiped.
   if (options?.memorySecurity !== false) db.pragma('cipher_memory_security = ON');
   const escapedKey = passphrase.replace(/'/g, "''");
@@ -81,8 +92,8 @@ export function applySecurityPragmas(
   // Before any write (journal_mode=WAL can create the file): the key must have attached
   // an encrypting codec to this connection, not just loaded a SQLCipher-capable library.
   assertEncryptionActive(db);
-  db.pragma(`kdf_iter=${options?.kdfIter ?? DEFAULT_KDF_ITER}`);
-  db.pragma(`journal_mode = ${options?.journalMode ?? 'WAL'}`);
+  db.pragma(`kdf_iter=${kdfIter}`);
+  db.pragma(`journal_mode = ${journalMode}`);
   db.pragma(`foreign_keys = ${options?.foreignKeys === false ? 'OFF' : 'ON'}`);
   db.pragma(`secure_delete = ${options?.secureDelete === false ? 'OFF' : 'ON'}`);
 }
