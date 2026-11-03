@@ -154,6 +154,35 @@ describe('sqlcipher adapter', () => {
     }
   });
 
+  it('rejects a passphrase with a NUL or in raw key syntax, without sending or echoing it', () => {
+    const invalidPassphrases = [
+      'abc\0def',
+      "x'2DD29CA851E7B56E4697B0E1F08507293D761A05CE4D1B628663F411A8086D99'",
+      "X''",
+      42,
+    ];
+    for (const passphrase of invalidPassphrases) {
+      const fakeDb = createFakeDb('4.20.0 community');
+      let message = '';
+      try {
+        applySecurityPragmas(fakeDb as any, passphrase as any);
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toMatch(/^Invalid passphrase/);
+      expect(message).not.toContain('abc');
+      expect(message).not.toContain('2DD29C');
+      expect(fakeDb.pragmaCalls).toEqual([]);
+    }
+  });
+
+  it('still accepts passphrases that only look close to the raw key syntax', () => {
+    for (const passphrase of ["x'not hex'", "my x'abc' pass", "x'abc"]) {
+      const fakeDb = createFakeDb('4.20.0 community');
+      expect(() => applySecurityPragmas(fakeDb as any, passphrase)).not.toThrow();
+    }
+  });
+
   it('closes the database when openEncryptedDatabase gets invalid options', () => {
     const fakeDb = createFakeDb('4.20.0 community');
     const FakeCtor = class {

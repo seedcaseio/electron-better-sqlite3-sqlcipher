@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## 0.3.0 - 2026-11-03
+
+### Changed
+
+- **Breaking:** `applySecurityPragmas` and `openEncryptedDatabase` reject a passphrase containing a NUL character (it cut the `PRAGMA key` statement short, and the resulting SQLite error quoted the start of the passphrase) or written in SQLCipher's raw key syntax `x'...'` (which skipped key derivation). The error messages never include the passphrase. A database created with such a passphrase no longer opens: change its key with an earlier version first (`PRAGMA rekey`).
+
 ## 0.2.1 - 2026-11-01
 
 ### Added

@@ -14,7 +14,7 @@ Builds `better-sqlite3` against SQLCipher for an Electron app, and provides a sm
 - `closeDatabase()`
 - `runMigrations(migrate)`
 - `isCipherAvailable(databaseCtor?)`
-- `applySecurityPragmas(db, passphrase, options?)`
+- `applySecurityPragmas(db, passphrase, options?)`: rejects a passphrase containing a NUL character or written in SQLCipher's raw key syntax `x'...'`.
 - `assertCipherAvailable(db)`: throws unless the connection runs SQLCipher (`openEncryptedDatabase` already calls it).
 - `assertEncryptionActive(db)`: throws unless the key attached an encrypting codec to the connection (`PRAGMA cipher_status`). `applySecurityPragmas` calls it right after the key, before any write.
 - `getSqlcipherDatabaseCtor()`: `better-sqlite3` constructor bound to the SQLCipher build. Use it for every connection opened outside `openEncryptedDatabase`.

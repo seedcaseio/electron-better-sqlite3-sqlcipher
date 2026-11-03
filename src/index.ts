@@ -25,6 +25,8 @@ export type OpenEncryptedDatabaseOptions = SecurityPragmaOptions & {
 };
 
 const DEFAULT_KDF_ITER = 256000;
+/** SQLCipher reads a key of this shape as raw key material and skips PBKDF2. */
+const RAW_KEY_SYNTAX = /^x'[0-9a-f]*'$/i;
 const JOURNAL_MODES: readonly string[] = ['DELETE', 'TRUNCATE', 'PERSIST', 'MEMORY', 'WAL', 'OFF'];
 let activeDb: BetterSqlite3Database | null = null;
 
@@ -84,6 +86,19 @@ export function applySecurityPragmas(
   const journalMode = options?.journalMode ?? 'WAL';
   if (!JOURNAL_MODES.includes(journalMode)) {
     throw new Error(`Invalid journalMode: expected one of ${JOURNAL_MODES.join(', ')}.`);
+  }
+  // The messages below never include the passphrase.
+  if (typeof passphrase !== 'string') {
+    throw new Error('Invalid passphrase: expected a string.');
+  }
+  // A NUL ends the SQL statement early: the key would be truncated and the error
+  // SQLite reports would quote the start of the passphrase.
+  if (passphrase.includes('\0')) {
+    throw new Error('Invalid passphrase: NUL characters are not allowed.');
+  }
+  // A passphrase shaped like x'<hex>' would be used as the raw key, without PBKDF2.
+  if (RAW_KEY_SYNTAX.test(passphrase)) {
+    throw new Error("Invalid passphrase: the raw key syntax x'...' is not accepted.");
   }
   // Before the key, so the copies of the passphrase SQLite makes while parsing it are wiped.
   if (options?.memorySecurity !== false) db.pragma('cipher_memory_security = ON');
